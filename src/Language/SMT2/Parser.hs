@@ -94,6 +94,7 @@ import           Data.Bifunctor         (first)
 import           Data.Char              (toLower)
 import           Data.Functor           (($>))
 import           Data.List.NonEmpty     (NonEmpty, fromList)
+import qualified Data.List.NonEmpty     as NE
 import qualified Data.Text              as T
 import           Language.SMT2.Syntax
 import           Text.Parsec            (ParseError, parse, try)
@@ -515,7 +516,7 @@ selectorDec = betweenBrackets $ do
 
 constructorDec :: GenParser st ConstructorDec
 constructorDec = betweenBrackets $ do
-  s <- symbol <* spaces1
+  s <- symbol <* spaces
   ConstructorDec s <$> sepSpace selectorDec
 
 datatypeDec :: GenParser st DatatypeDec
@@ -582,9 +583,12 @@ command =  cmd "assert" (Assert <$> term)
   where
     cmd s p = try $ betweenBrackets (tryStr s *> p)
     declareDatatypes = do
-      sds <- betweenBrackets $ sepSpace1 sortDec
+      _ <- betweenBrackets spaces
       spaces
-      dds <- betweenBrackets $ sepSpace1 datatypeDec
+      (sds, dds) <- fmap NE.unzip $
+        betweenBrackets $ sepSpace1 $ betweenBrackets $
+          (,) <$> (flip SortDec "0" <$> symbol <* spaces1)
+              <*> (DDNonparametric <$> sepSpace1 constructorDec)
       if length sds == length dds
          then pure $ DeclareDatatypes sds dds
          else unexpected "declare-datatypes: sorts and datatypes should have same length"
