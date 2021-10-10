@@ -538,7 +538,7 @@ functionDec = betweenBrackets $ do
   FunctionDec s svs <$> sort
 
 functionDef :: GenParser st FunctionDef
-functionDef = betweenBrackets $ do
+functionDef = do
   s <- symbol <* spaces
   svs <- betweenBrackets $ sepSpace sortedVar
   t <- spaces *> sort <* spaces1
